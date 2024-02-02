@@ -1,115 +1,141 @@
 ﻿using System.Diagnostics;
-using System.Reflection;
-using System.IO;
-using System.Text.Json;
-using System.Text.Json.Serialization;
-using System.Xml;
-using System.Xml.Serialization;
+using System.Text;
 
-string path = Path.Combine(new FileInfo(Assembly.GetCallingAssembly().Location).DirectoryName, "data.json");
-
-if (args.Length == 0)
+public class Program
 {
-    return;
-}
-else if (args[0] == "-delete")
-{
-    if(args.Length < 2)
+    public static void Main(string[] args)
     {
-        Console.WriteLine("Please provide the entry to delete");
-    }
-    else
-    {
-        if (!File.Exists(path))
+        if (Path.GetDirectoryName(Environment.ProcessPath) == null) return;
+        string path = Path.Combine(Path.GetDirectoryName(Environment.ProcessPath), "data.dat");
+        if (args.Length == 0)
         {
-            File.Create(path);
-            Console.WriteLine($"No entry named {args[0]}");
             return;
         }
-        string json = File.ReadAllText(path);
-        Dictionary<string, string>? data = JsonSerializer.Deserialize<Dictionary<string, string>>(json);
-        if (data.ContainsKey(args[1]))
+        else if (args[0] == "-delete")
         {
-            data.Remove(args[1]);
-            File.WriteAllText(path, JsonSerializer.Serialize(data));
-            Console.WriteLine($"Entry {args[1]} deleted");
-        }
-    }
+            if (args.Length < 2)
+            {
+                Console.WriteLine("Please provide the entry to delete");
+            }
+            else
+            {
+                if (!File.Exists(path))
+                {
+                    File.Create(path);
+                    Console.WriteLine($"No entry named {args[0]}");
+                    return;
+                }
+                string savedData = File.ReadAllText(path);
+                Dictionary<string, string> data = Deserialize(savedData);
+                if (data.ContainsKey(args[1]))
+                {
+                    data.Remove(args[1]);
+                    File.WriteAllText(path, Serialize(data));
+                    Console.WriteLine($"Entry {args[1]} deleted");
+                }
+            }
 
-}
-else if (args[0] == "-list")
-{
-    Dictionary<string,string> data;
-    if (!File.Exists(path))
-    {
-        data = new();
-    }
-    else
-    {
-        string json = File.ReadAllText(path);
-        data = JsonSerializer.Deserialize<Dictionary<string, string>>(json);
-    }
-    foreach(KeyValuePair<string,string> entry in data)
-    {
-        Console.WriteLine($"{entry.Key} -> \"{entry.Value}\"");
-    }
-}
-else if (args[0] == "-add")
-{
-    if (args.Length < 2)
-    {
-        Console.WriteLine("Please provide a name");
-        return;
-    }
-    if (args.Length < 3)
-    {
-        Console.WriteLine("Please provide a path");
-        return;
-    }
-    Dictionary<string, string>? data;
-    if (!File.Exists(path))
-    {
-        data = new();
-    }
-    else
-    {
-        string json = File.ReadAllText(path);
-        data = JsonSerializer.Deserialize<Dictionary<string, string>>(json);
-    }
-    if (data.ContainsKey(args[1]))
-    {
-        Console.WriteLine($"Entry {args[1]} already exists");
-    }
-    if (Directory.Exists(args[2]))
-    {
-        data.Add(args[1], new DirectoryInfo(args[2]).FullName);
-        File.WriteAllText(path, JsonSerializer.Serialize(data));
-        Console.WriteLine($"Entry {args[1]} added");
-    }
-    else
-    {
-        Console.WriteLine($"\"{args[2]} is not a valid directory or is a file\"");
-    }
-}
-else
-{
-    if (!File.Exists(path))
-    {
-        File.Create(path);
-        Console.WriteLine($"No location named {args[0]}");
-        return;
-    }
-    string json = File.ReadAllText(path);
-    Dictionary<string, string>? data = JsonSerializer.Deserialize<Dictionary<string, string>>(json);
-    if (data != null)
-    {
-        if (data.ContainsKey(args[0]))
+        }
+        else if (args[0] == "-list")
         {
-            Process.Start("explorer.exe", data[args[0]]);
+            Dictionary<string, string> data;
+            if (!File.Exists(path))
+            {
+                data = new();
+            }
+            else
+            {
+                string savedData = File.ReadAllText(path);
+                data = Deserialize(savedData);
+            }
+            foreach (KeyValuePair<string, string> entry in data)
+            {
+                Console.WriteLine($"{entry.Key} -> \"{entry.Value}\"");
+            }
+        }
+        else if (args[0] == "-add")
+        {
+            if (args.Length < 2)
+            {
+                Console.WriteLine("Please provide a name");
+                return;
+            }
+            if (args.Length < 3)
+            {
+                Console.WriteLine("Please provide a path");
+                return;
+            }
+            Dictionary<string, string> data;
+            if (!File.Exists(path))
+            {
+                data = new();
+            }
+            else
+            {
+                string savedData = File.ReadAllText(path);
+                data = Deserialize(savedData);
+            }
+            if (data.ContainsKey(args[1]))
+            {
+                Console.WriteLine($"Entry {args[1]} already exists");
+            }
+            if (Directory.Exists(args[2]))
+            {
+                data.Add(args[1], new DirectoryInfo(args[2]).FullName);
+                File.WriteAllText(path, Serialize(data));
+                Console.WriteLine($"Entry {args[1]} added");
+            }
+            else
+            {
+                Console.WriteLine($"\"{args[2]} is not a valid directory or is a file\"");
+            }
         }
         else
         {
-            Console.WriteLine($"No location named {args[0]}");
+            if (!File.Exists(path))
+            {
+                File.Create(path);
+                Console.WriteLine($"No location named {args[0]}");
+                return;
+            }
+            string savedData = File.ReadAllText(path);
+            Dictionary<string, string> data = Deserialize(savedData);
+            if (data != null)
+            {
+                if (data.ContainsKey(args[0]))
+                {
+                    Process.Start("explorer.exe", data[args[0]]);
+                }
+                else
+                {
+                    Console.WriteLine($"No location named {args[0]}");
+                }
+            }
         }
+    }
+    public static string Serialize(Dictionary<string, string> data)
+    {
+        StringBuilder sb = new();
+        foreach(KeyValuePair<string, string> kvp in data)
+        {
+            sb.Append(kvp.Key);
+            sb.Append('=');
+            sb.Append(kvp.Value);
+            sb.AppendLine();
+        }
+        return sb.ToString();
+    }
+    public static  Dictionary<string, string> Deserialize(string data)
+    {
+        Dictionary<string, string> result = new();
+        data.Split('\n').ToList().ForEach(line =>
+        {
+            string[] split = line.Split('=');
+            if (split.Length == 2)
+            {
+                result.Add(split[0], split[1]);
+            }
+        });
+        return result;
     }
 }
