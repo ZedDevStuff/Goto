@@ -26,7 +26,7 @@ public class Program
                     return;
                 }
                 string savedData = File.ReadAllText(path);
-                Dictionary<string, string> data = Deserialize(savedData);
+                Dictionary<string, string> data = Load(path);
                 if (data.ContainsKey(args[1]))
                 {
                     data.Remove(args[1]);
@@ -46,7 +46,7 @@ public class Program
             else
             {
                 string savedData = File.ReadAllText(path);
-                data = Deserialize(savedData);
+                data = Load(path);
             }
             foreach (KeyValuePair<string, string> entry in data)
             {
@@ -73,7 +73,7 @@ public class Program
             else
             {
                 string savedData = File.ReadAllText(path);
-                data = Deserialize(savedData);
+                data = Load(path);
             }
             if (data.ContainsKey(args[1]))
             {
@@ -99,7 +99,7 @@ public class Program
                 return;
             }
             string savedData = File.ReadAllText(path);
-            Dictionary<string, string> data = Deserialize(savedData);
+            Dictionary<string, string> data = Load(path);
             if (data != null)
             {
                 if (data.ContainsKey(args[0]))
@@ -125,10 +125,10 @@ public class Program
         }
         return sb.ToString();
     }
-    public static  Dictionary<string, string> Deserialize(string data)
+    public static Dictionary<string, string> Load(string path)
     {
         Dictionary<string, string> result = new();
-        data.Split('\n').ToList().ForEach(line =>
+        File.ReadAllLines(path).ToList().ForEach(line =>
         {
             string[] split = line.Split('=');
             if (split.Length == 2)
